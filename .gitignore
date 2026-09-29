@@ -1,1 +1,6 @@
 .venv/
+venv/
+__pycache__/
+*.pyc
+app/faces_db/*.pkl
+app/temp_capture.jpg

@@ -10,12 +10,12 @@ from deepface import DeepFace
 import cv2
 import numpy as np
 
-app = FastAPI(title="Sistema de Asistencia Facial")
-
-# 1. Definición de rutas (debe ir ANTES de usar BASE_DIR)
+# 1. Definición de rutas principales
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FACES_DB = os.path.join(BASE_DIR, "faces_db")
 CSV_PATH = os.path.join(BASE_DIR, "asistencia.csv")
+
+app = FastAPI(title="Sistema de Asistencia Facial")
 
 # 2. Configurar archivos estáticos y plantillas
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "templates")), name="static")
@@ -41,26 +41,22 @@ async def reconocer_rostro(image_data: str = Form(...)):
         np_arr = np.frombuffer(image_bytes, np.uint8)
         img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
-        # Guardar temporalmente la captura para que DeepFace la procese
-        temp_path = os.path.join(BASE_DIR, "temp_capture.jpg")
-        cv2.imwrite(temp_path, img)
+        if img is None:
+            return JSONResponse({"exito": False, "mensaje": "Imagen no válida"})
 
-        # Buscar coincidencias en la carpeta faces_db
+        # Pasar el arreglo numpy directamente a DeepFace (sin guardar imagen temporal en disco)
         dfs = DeepFace.find(
-            img_path=temp_path,
+            img_path=img,
             db_path=FACES_DB,
             enforce_detection=False,
             silent=True
         )
 
-        # Limpiar la imagen temporal
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-
         # Validar si hubo coincidencia
         if len(dfs) > 0 and not dfs[0].empty:
             match_path = dfs[0].iloc[0]['identity']
-            # Extraer el nombre de la persona a partir del archivo (ejemplo: "Juan_Perez.jpg" -> "Juan Perez")
+            
+            # Extraer nombre (ejemplo: "Harold.jpeg" -> "Harold", "Juan_Perez.jpg" -> "Juan Perez")
             file_name = os.path.basename(match_path)
             nombre = os.path.splitext(file_name)[0].replace("_", " ")
 
@@ -68,10 +64,10 @@ async def reconocer_rostro(image_data: str = Form(...)):
             fecha = now.strftime("%Y-%m-%d")
             hora = now.strftime("%H:%M:%S")
 
-            # Registrar en el archivo CSV
-            df = pd.read_csv(CSV_PATH)
+            # Lectura y registro en CSV
+            df = pd.read_csv(CSV_PATH) if os.path.exists(CSV_PATH) else pd.DataFrame(columns=["Nombre", "Fecha", "Hora"])
             
-            # Evitar duplicados del mismo día/persona
+            # Control anti-duplicados por día
             ya_registrado = not df[(df["Nombre"] == nombre) & (df["Fecha"] == fecha)].empty
 
             if not ya_registrado:
@@ -98,6 +94,9 @@ async def reconocer_rostro(image_data: str = Form(...)):
 @app.get("/asistencias")
 async def obtener_asistencias():
     if os.path.exists(CSV_PATH):
-        df = pd.read_csv(CSV_PATH)
-        return df.to_dict(orient="records")
+        try:
+            df = pd.read_csv(CSV_PATH)
+            return df.to_dict(orient="records")
+        except Exception:
+            return []
     return []
