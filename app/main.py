@@ -10,18 +10,15 @@ from deepface import DeepFace
 import cv2
 import numpy as np
 
-# 1. Definición de rutas principales
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 FACES_DB = os.path.join(BASE_DIR, "faces_db")
 CSV_PATH = os.path.join(BASE_DIR, "asistencia.csv")
 
 app = FastAPI(title="Sistema de Asistencia Facial")
 
-# 2. Configurar archivos estáticos y plantillas
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "templates")), name="static")
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-# 3. Inicializar archivo CSV si no existe
 if not os.path.exists(CSV_PATH):
     df_init = pd.DataFrame(columns=["Nombre", "Fecha", "Hora"])
     df_init.to_csv(CSV_PATH, index=False)
@@ -35,7 +32,6 @@ async def index(request: Request):
 @app.post("/reconocer")
 async def reconocer_rostro(image_data: str = Form(...)):
     try:
-        # Decodificar la imagen enviada en base64 desde el navegador
         header, encoded = image_data.split(",", 1)
         image_bytes = base64.b64decode(encoded)
         np_arr = np.frombuffer(image_bytes, np.uint8)
@@ -44,7 +40,6 @@ async def reconocer_rostro(image_data: str = Form(...)):
         if img is None:
             return JSONResponse({"exito": False, "mensaje": "Imagen no válida"})
 
-        # Pasar el arreglo numpy directamente a DeepFace (sin guardar imagen temporal en disco)
         dfs = DeepFace.find(
             img_path=img,
             db_path=FACES_DB,
@@ -52,11 +47,9 @@ async def reconocer_rostro(image_data: str = Form(...)):
             silent=True
         )
 
-        # Validar si hubo coincidencia
         if len(dfs) > 0 and not dfs[0].empty:
             match_path = dfs[0].iloc[0]['identity']
             
-            # Extraer nombre (ejemplo: "Harold.jpeg" -> "Harold", "Juan_Perez.jpg" -> "Juan Perez")
             file_name = os.path.basename(match_path)
             nombre = os.path.splitext(file_name)[0].replace("_", " ")
 
@@ -64,10 +57,8 @@ async def reconocer_rostro(image_data: str = Form(...)):
             fecha = now.strftime("%Y-%m-%d")
             hora = now.strftime("%H:%M:%S")
 
-            # Lectura y registro en CSV
             df = pd.read_csv(CSV_PATH) if os.path.exists(CSV_PATH) else pd.DataFrame(columns=["Nombre", "Fecha", "Hora"])
             
-            # Control anti-duplicados por día
             ya_registrado = not df[(df["Nombre"] == nombre) & (df["Fecha"] == fecha)].empty
 
             if not ya_registrado:
