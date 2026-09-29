@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Asistencia Facial</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+    <h1>Control de Asistencia Facial</h1>
+
+    <div class="container">
+        <div class="card">
+            <h2>Cámara en Vivo</h2>
+            <video id="video" autoplay playsinline></video>
+            <br>
+            <button onclick="tomarAsistencia()">Registrar Asistencia</button>
+            <p id="status"></p>
+        </div>
+
+        <div class="card card-tabla">
+            <h2>Registros de Hoy</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Fecha</th>
+                        <th>Hora</th>
+                    </tr>
+                </thead>
+                <tbody id="tabla-asistencia"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const statusText = document.getElementById('status');
+
+        // Acceder a la cámara web
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => { video.srcObject = stream; })
+            .catch(err => { statusText.innerText = "Error al acceder a la cámara"; });
+
+        async function tomarAsistencia() {
+            statusText.innerText = "Procesando rostro...";
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            const dataUrl = canvas.toDataURL('image/jpeg');
+
+            const formData = new FormData();
+            formData.append('image_data', dataUrl);
+
+            try {
+                const res = await fetch('/reconocer', { method: 'POST', body: formData });
+                const data = await res.json();
+                statusText.innerText = data.mensaje;
+                actualizarTabla();
+            } catch (err) {
+                statusText.innerText = "Error en la solicitud";
+            }
+        }
+
+        async function actualizarTabla() {
+            const res = await fetch('/asistencias');
+            const data = await res.json();
+            const tbody = document.getElementById('tabla-asistencia');
+            tbody.innerHTML = '';
+            data.forEach(row => {
+                tbody.innerHTML += `<tr><td>${row.Nombre}</td><td>${row.Fecha}</td><td>${row.Hora}</td></tr>`;
+            });
+        }
+
+        actualizarTabla();
+    </script>
+</body>
+</html>

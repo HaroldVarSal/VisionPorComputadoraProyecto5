@@ -1,0 +1,96 @@
+:root {
+    --bg-color: #1e1e2e;
+    --card-bg: #313244;
+    --text-color: #cdd6f4;
+    --accent-color: #89b4fa;
+    --accent-hover: #b4befe;
+    --border-color: #45475a;
+    --status-color: #f9e2af;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+h1 {
+    color: var(--accent-color);
+    margin-bottom: 25px;
+}
+
+.container {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+    max-width: 1000px;
+}
+
+.card {
+    background: var(--card-bg);
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+    text-align: center;
+}
+
+.card-tabla {
+    flex: 1;
+    min-width: 300px;
+}
+
+video {
+    border-radius: 8px;
+    background: #000;
+    width: 100%;
+    max-width: 400px;
+    border: 2px solid var(--border-color);
+}
+
+button {
+    background: var(--accent-color);
+    color: #11111b;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: background 0.2s ease-in-out;
+}
+
+button:hover {
+    background: var(--accent-hover);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+th, td {
+    border: 1px solid var(--border-color);
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background: var(--border-color);
+    color: var(--accent-color);
+}
+
+#status {
+    margin-top: 15px;
+    font-weight: bold;
+    color: var(--status-color);
+    min-height: 24px;
+}
